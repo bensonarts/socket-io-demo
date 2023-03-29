@@ -14,8 +14,11 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('user disconnected');
     });
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', msg);
+    socket.on('chat message', (user, msg) => {
+        io.emit('chat message', user, msg);
+    });
+    socket.on('typing', (user, typing) => {
+        io.emit('typing', user, typing);
     });
 });
 

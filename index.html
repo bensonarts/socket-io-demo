@@ -16,30 +16,82 @@
     </style>
 </head>
 <body>
+<div id="typing"></div>
 <ul id="messages"></ul>
+<form id="username-form">
+    <input id="username" autocomplete="off" placeholder="Choose your username" /><button>Submit</button>
+</form>
 <form id="form" action="">
     <input id="input" autocomplete="off" /><button>Send</button>
 </form>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    var socket = io();
+    const socket = io();
+    const form = document.getElementById('form');
+    const usernameForm = document.getElementById('username-form');
+    const input = document.getElementById('input');
+    const username = document.getElementById('username');
+    const typing = document.getElementById('typing');
+    const messages = document.getElementById('messages');
+    let currentMessage = '';
+    let user = '';
 
-    var form = document.getElementById('form');
-    var input = document.getElementById('input');
+    document.addEventListener('DOMContentLoaded', function(){
+        const u = localStorage.getItem('username');
+        if (u && '' !== u) {
+            user = u;
+            document.body.removeChild(usernameForm);
+        } else {
+            form.style.display = 'none';
+        }
+    }, false);
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (input.value) {
-            socket.emit('chat message', input.value);
+            socket.emit('chat message', user, input.value);
             input.value = '';
         }
     });
 
-    socket.on('chat message', function(msg) {
-        var item = document.createElement('li');
-        item.textContent = msg;
+    usernameForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (username.value) {
+            user = username.value;
+            localStorage.setItem('username', username.value);
+            username.value = '';
+            document.body.removeChild(usernameForm);
+            form.style.display = 'flex';
+        }
+    });
+
+    input.addEventListener('keyup', function(e) {
+        currentMessage = e.target.value;
+        socket.emit('typing', user, true);
+    });
+
+    input.addEventListener('change', function(e) {
+        setTimeout(() => {
+            socket.emit('typing', user, false);
+        }, 500);
+    });
+
+    socket.on('chat message', function(user, msg) {
+        const item = document.createElement('li');
+        item.innerHTML = `<strong>${user}</strong> ${msg}`;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    socket.on('typing', function (u, msg) {
+        if (u === user) {
+            return;
+        }
+        if (msg) {
+            typing.innerHTML = `${u} is typing...`;
+        } else {
+            typing.innerHTML = '';
+        }
     });
 </script>
 </body>
